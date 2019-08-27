@@ -1,51 +1,80 @@
-﻿using Shop.Web.Data.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace Shop.Web.Data
+﻿namespace Shop.Web.Data
 {
+    using Microsoft.AspNetCore.Identity;
+    using Shop.Web.Data.Entities;
+    using Shop.Web.Helpers;
+    using System;
+    using System.Linq;
+    using System.Threading.Tasks;
+
+
     /// <summary>
     /// Clase que nos permite guardar registros a la DB si es que no contiene ningún registro.
     /// </summary>
     public class SeedDb
     {
         private readonly DataContext context;
-
+        private readonly IUserHelper userHelper;
         private Random random;
 
 
-        public SeedDb(DataContext context)
+        public SeedDb(DataContext context, IUserHelper userHelper)
         {
             this.context = context;
-            this.random = new Random();
+            this.userHelper = userHelper;
+            random = new Random();
         }
 
 
         public async Task SeedAsync()
         {
-            await this.context.Database.EnsureCreatedAsync();
+            await context.Database.EnsureCreatedAsync();
 
-            if (!this.context.Products.Any())
+
+            var user = await userHelper.GetUserByMailAsync("magdiel.palacios@csfacturacion.com");
+
+            if (user == null)
             {
-                this.AddProduct("Iphone x");
-                this.AddProduct("Magic Maouse");
-                this.AddProduct("Iwatch Series 4");
+                user = new User()
+                {
+                    FirstName = "Magdiel",
+                    LastName = "Palacios",
+                    Email = "magdiel.palacios@csfacturacion.com",
+                    UserName = "magdiel.palacios@csfacturacion.com",
+                    PhoneNumber = "2888893680"
+                };
 
-                await this.context.SaveChangesAsync();
+
+                var result = await userHelper.AddUserAsync(user, "123456");
+
+                if (result != IdentityResult.Success)
+                {
+                    throw new InvalidOperationException("Could not create the user in seeder");
+                }
+
+            }
+
+
+            if (!context.Products.Any())
+            {
+                AddProduct("Iphone x", user);
+                AddProduct("Magic Maouse", user);
+                AddProduct("Iwatch Series 4", user);
+
+                await context.SaveChangesAsync();
             }
         }
 
-        private void AddProduct(string name)
+        private void AddProduct(string name, User user)
         {
 
-            this.context.Products.Add(new Product
+            context.Products.Add(new Product
             {
                 Name = name,
-                Price = this.random.Next(100),
+                Price = random.Next(100),
                 IsAvailabe = true,
-                Stock = this.random.Next(100)
+                Stock = random.Next(100),
+                User = user
             }
                 );
         }

@@ -1,25 +1,29 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Shop.Web.Data;
-using Shop.Web.Data.Entities;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace Shop.Web.Controllers
+﻿namespace Shop.Web.Controllers
 {
+    using Microsoft.AspNetCore.Mvc;
+    using Microsoft.EntityFrameworkCore;
+    using Shop.Web.Data;
+    using Shop.Web.Data.Entities;
+    using Shop.Web.Helpers;
+    using System.Threading.Tasks;
+
+
     public class ProductsController : Controller
     {
         private readonly IRepository repository;
 
-        public ProductsController(IRepository repository)
+        private readonly IUserHelper userHelper;
+
+        public ProductsController(IRepository repository, IUserHelper userHelper)
         {
             this.repository = repository;
+            this.userHelper = userHelper;
         }
 
         // GET: Products
         public IActionResult Index()
         {
-            return View(this.repository.GetProducts());
+            return View(repository.GetProducts());
         }
 
         // GET: Products/Details/5
@@ -30,7 +34,7 @@ namespace Shop.Web.Controllers
                 return NotFound();
             }
 
-            var product = this.repository.GetProduct(id.Value);
+            var product = repository.GetProduct(id.Value);
 
             if (product == null)
             {
@@ -55,9 +59,12 @@ namespace Shop.Web.Controllers
         {
             if (ModelState.IsValid)
             {
-                this.repository.AddProduct(product);
+                //TODO:  Change fot the logger user
+                product.User = await this.userHelper.GetUserByMailAsync("magdiel.palacios@csfacturacion.com");
 
-                await this.repository.SaveAllAsync();
+                repository.AddProduct(product);
+
+                await repository.SaveAllAsync();
 
                 return RedirectToAction(nameof(Index));
             }
@@ -72,7 +79,7 @@ namespace Shop.Web.Controllers
                 return NotFound();
             }
 
-            var product = this.repository.GetProduct(id.Value);
+            var product = repository.GetProduct(id.Value);
 
             if (product == null)
             {
@@ -86,17 +93,20 @@ namespace Shop.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Product product)
         {
-           
+
             if (ModelState.IsValid)
             {
                 try
                 {
-                    this.repository.UpdateProduct(product);
-                    await this.repository.SaveAllAsync();
+
+                    //TODO:  Change fot the logger user
+                    product.User = await this.userHelper.GetUserByMailAsync("magdiel.palacios@csfacturacion.com");
+                    repository.UpdateProduct(product);
+                    await repository.SaveAllAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!this.repository.ProductExists(product.Id))
+                    if (!repository.ProductExists(product.Id))
                     {
                         return NotFound();
                     }
@@ -118,7 +128,7 @@ namespace Shop.Web.Controllers
                 return NotFound();
             }
 
-            var product = this.repository.GetProduct(id.Value);
+            var product = repository.GetProduct(id.Value);
 
             if (product == null)
             {
@@ -133,11 +143,11 @@ namespace Shop.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var product = this.repository.GetProduct(id);
+            var product = repository.GetProduct(id);
 
-            this.repository.RemoveProduct(product);
+            repository.RemoveProduct(product);
 
-            await this.repository.SaveAllAsync();
+            await repository.SaveAllAsync();
 
             return RedirectToAction(nameof(Index));
         }
