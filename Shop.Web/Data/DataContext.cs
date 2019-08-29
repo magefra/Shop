@@ -9,8 +9,11 @@ namespace Shop.Web.Data
     {
         public DbSet<Entities.Product> Products { get; set; }
 
+        public DbSet<Entities.Country> Countries { get; set; }
+
         public DataContext(DbContextOptions<DataContext> options): base(options)
         {
+
         }
 
 
